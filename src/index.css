@@ -143,6 +143,8 @@ body {
 
 .list-watched {
   height: calc(100% - 9rem);
+  /* display: flex;
+  flex-direction: row; */
 }
 
 .list li {
@@ -179,7 +181,8 @@ body {
 .list div {
   display: flex;
   align-items: center;
-  gap: 2.4rem;
+  /* gap: 2.4rem; */
+  gap: 2rem;
 }
 
 .list p {
@@ -190,7 +193,8 @@ body {
 
 .btn-delete {
   position: absolute;
-  right: 2.4rem;
+  right: 2rem;
+  /* top: 3.5rem; */
 
   height: 1.8rem;
   aspect-ratio: 1;
