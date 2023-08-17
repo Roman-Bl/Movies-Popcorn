@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useEffect } from "react";
+import StarRating from "./StarsRating";
 
 const tempMovieData = [
   {
@@ -58,8 +59,17 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   // const query = "interstellar";
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState("The Matrix");
+  const [selectedId, setSelectedId] = useState("tt0133093");
 
+  function handleSelectedId(id) {
+    // set id AMD conditionaly reset if click again on already selected movie
+    setSelectedId(id === selectedId ? null : id);
+  }
+
+  function handleCloseMovie() {
+    setSelectedId(null);
+  }
   useEffect(
     function () {
       async function fetchMovie() {
@@ -80,7 +90,7 @@ export default function App() {
 
           // if we get response with movies
           setMovies(data.Search);
-          // console.log(data.Search);
+          console.log(data.Search);
         } catch (err) {
           setError(err.message);
         } finally {
@@ -110,12 +120,23 @@ export default function App() {
       <Main>
         <Box>
           {isLoading && <Loading />}
-          {!isLoading && !error && <MoviesList movies={movies} />}
+          {!isLoading && !error && (
+            <MoviesList movies={movies} onSelectedId={handleSelectedId} />
+          )}
           {error && <ErrorMessage message={error} />}
         </Box>
         <Box>
-          <WatchedSummary watched={watched} />
-          <WatchedMoviesList watched={watched} />
+          {selectedId ? (
+            <MovieDetails
+              selectedId={selectedId}
+              onCloseMovie={handleCloseMovie}
+            />
+          ) : (
+            <>
+              <WatchedSummary watched={watched} />
+              <WatchedMoviesList watched={watched} />
+            </>
+          )}
         </Box>
       </Main>
     </>
@@ -189,19 +210,19 @@ function Box({ children }) {
   );
 }
 
-function MoviesList({ movies }) {
+function MoviesList({ movies, onSelectedId }) {
   return (
-    <ul className="list">
+    <ul className="list list-movies">
       {movies?.map((movie) => (
-        <Movie movie={movie} key={movie.imdbID} />
+        <Movie movie={movie} key={movie.imdbID} onSelectedId={onSelectedId} />
       ))}
     </ul>
   );
 }
 
-function Movie({ movie }) {
+function Movie({ movie, onSelectedId }) {
   return (
-    <li>
+    <li onClick={() => onSelectedId(movie.imdbID)}>
       <img src={movie.Poster} alt={`${movie.Title} poster`} />
       <h3>{movie.Title}</h3>
       <div>
@@ -221,6 +242,81 @@ function WatchedMoviesList({ watched }) {
         <WatchedMovie movie={movie} key={movie.imdbID} />
       ))}
     </ul>
+  );
+}
+
+function MovieDetails({ selectedId, onCloseMovie }) {
+  const [movieInfo, setMovieInfo] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+
+  // destructuring the object
+  const {
+    Title: title,
+    Year: year,
+    Released: released,
+    Runtime: runtime,
+    Poster: poster,
+    imdbRating,
+    Plot: plot,
+    Actors: actors,
+    Director: director,
+    Genre: genre,
+  } = movieInfo;
+
+  console.log(title, year);
+
+  // we need useEffect because we want to display info about movie already at mount of the component
+  useEffect(
+    function () {
+      async function getMovieDetails() {
+        setIsLoading(true);
+        const res =
+          await fetch(`http://www.omdbapi.com/?apikey=${KEY}&i=${selectedId}
+  `);
+        const data = await res.json();
+        console.log(data);
+        setMovieInfo(data);
+        setIsLoading(false);
+      }
+      getMovieDetails();
+    },
+    [selectedId]
+  );
+
+  return (
+    <div className="details">
+      {isLoading ? (
+        <Loading />
+      ) : (
+        <>
+          <header>
+            <button className="btn-back" onClick={onCloseMovie}>
+              &larr;
+            </button>
+            <img src={poster} alt={`Poster of ${title} movie`} />
+            <div className="details-overview">
+              <h2>{title}</h2>
+              <p>
+                {released} &bull; {runtime}
+              </p>
+              <p>{genre}</p>
+              <p>
+                <span>🌟</span>
+                {imdbRating}
+              </p>
+            </div>
+          </header>
+          <section>
+            <StarRating maxRating={10} size={24} defaultRating={0} />
+            <p>
+              <em>{plot}</em>
+            </p>
+            <p>Main starts: {actors}</p>
+            <p>Directed by {director}</p>
+          </section>
+        </>
+      )}
+    </div>
   );
 }
 
