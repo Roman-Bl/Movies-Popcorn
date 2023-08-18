@@ -54,13 +54,13 @@ const average = (arr) =>
 const KEY = "5b079ac1";
 
 export default function App() {
+  const [query, setQuery] = useState("");
+  const [selectedId, setSelectedId] = useState(null);
   const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   // const query = "interstellar";
-  const [query, setQuery] = useState("The Matrix");
-  const [selectedId, setSelectedId] = useState("tt0133093");
 
   function handleSelectedId(id) {
     // set id AMD conditionaly reset if click again on already selected movie
@@ -79,16 +79,23 @@ export default function App() {
     setWatched((watched) => watched.filter((movie) => movie.imdbID !== id));
   }
 
+  // this effect could fire up to many requests on query change so we need to use cleanUp
   useEffect(
     function () {
+      // calling default browser API
+      const controller = new AbortController();
+
       async function fetchMovie() {
         try {
           setIsLoading(true);
           // reseting the error
           setError("");
-          const res =
-            await fetch(`http://www.omdbapi.com/?apikey=${KEY}&s=${query}
-        `);
+          // connectiong controller with fetch request (adding as second arg)
+          const res = await fetch(
+            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}
+        `,
+            { signal: controller.signal }
+          );
           // if connection lost
           if (!res.ok)
             throw new Error("Something went wrong with fetching movies");
@@ -100,8 +107,11 @@ export default function App() {
           // if we get response with movies
           setMovies(data.Search);
           console.log(data.Search);
+          // needed because of cleanup
+          // setError("");
         } catch (err) {
-          setError(err.message);
+          // prevent controller Abort error from being counting/displayed as error
+          if (err.name !== "AbortError") setError(err.message);
         } finally {
           setIsLoading(false);
         }
@@ -112,8 +122,16 @@ export default function App() {
         setError("");
         return;
       }
+
+      // closing movieDetails when we start new search
+      handleCloseMovie();
       // calling func
       fetchMovie();
+
+      // creating cleanup
+      return function () {
+        controller.abort();
+      };
     },
     // setting for dependencyArray
     [query]
@@ -291,13 +309,6 @@ function MovieDetails({ selectedId, onCloseMovie, onSetWatched, watched }) {
     Genre: genre,
   } = movieInfo;
 
-  console.log(title, year);
-
-  // function handleCloseMovie() {
-  //   onCloseMovie();
-
-  // }
-
   function handleWathcedAdd() {
     const newWathcedMovie = {
       imdbID: selectedId,
@@ -323,13 +334,46 @@ function MovieDetails({ selectedId, onCloseMovie, onSetWatched, watched }) {
           await fetch(`http://www.omdbapi.com/?apikey=${KEY}&i=${selectedId}
   `);
         const data = await res.json();
-        console.log(data);
+        // console.log(data);
         setMovieInfo(data);
         setIsLoading(false);
       }
       getMovieDetails();
     },
     [selectedId]
+  );
+
+  // changing page title
+  useEffect(
+    function () {
+      if (!title) return;
+      document.title = `Movie | ${title}`;
+      // cleanup func
+      return function () {
+        document.title = "usePopcorn";
+      };
+    },
+    [title]
+  );
+
+  // adding listen event to close if Esc button is pressed on keyboard
+  useEffect(
+    function () {
+      const closing = function (e) {
+        if (e.code === "Escape") {
+          onCloseMovie();
+          console.log("CLOSING");
+        }
+      };
+      // adding global listener to the document - going outside React
+      document.addEventListener("keydown", closing);
+
+      // adding clean up
+      return function () {
+        document.removeEventListener("keydown", closing);
+      };
+    },
+    [onCloseMovie]
   );
 
   return (
