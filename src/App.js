@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useEffect } from "react";
 import StarRating from "./StarsRating";
 
@@ -57,9 +57,12 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState(null);
   const [movies, setMovies] = useState([]);
-  const [watched, setWatched] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [watched, setWatched] = useState(() =>
+    JSON.parse(localStorage.getItem("watched"))
+  );
+
   // const query = "interstellar";
 
   function handleSelectedId(id) {
@@ -73,12 +76,24 @@ export default function App() {
 
   function handleSetWatched(movie) {
     setWatched((watched) => [...watched, movie]);
+    // localStorage.setItem("watched", JSON.stringify([...watched, movie]));
   }
 
   function handleDeleteWatched(id) {
     setWatched((watched) => watched.filter((movie) => movie.imdbID !== id));
+    // localStorage.setItem(
+    //   "watched",
+    //   JSON.stringify(watched.filter((movie) => movie.imdbID !== id))
+    // );
   }
 
+  // saving watched to localStorage
+  useEffect(
+    function () {
+      localStorage.setItem("watched", JSON.stringify(watched));
+    },
+    [watched]
+  );
   // this effect could fire up to many requests on query change so we need to use cleanUp
   useEffect(
     function () {
@@ -211,6 +226,26 @@ function Logo() {
 }
 
 function Search({ query, setQuery }) {
+  // initialize useRef
+  const inputEl = useRef(null);
+
+  // creating useEffect for focus on mount
+  useEffect(function () {
+    inputEl.current.focus();
+    // creating focus on Enter btn pressed
+    function callback(e) {
+      // if (document.activeElement === inputEl.current) return;
+      console.log("event");
+      if (e.code === "Enter") {
+        inputEl.current.focus();
+        // setQuery("");
+      }
+    }
+    document.addEventListener("keydown", callback);
+    // cleaning up
+    return () => document.removeEventListener("keydown", callback);
+  }, []);
+
   return (
     <input
       className="search"
@@ -218,6 +253,8 @@ function Search({ query, setQuery }) {
       placeholder="Search movies..."
       value={query}
       onChange={(e) => setQuery(e.target.value)}
+      // telling that ref to this element in our variable
+      ref={inputEl}
     />
   );
 }
