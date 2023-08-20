@@ -33,7 +33,7 @@ export function useMovies(query) {
 
           // if we get response with movies
           setMovies(data.Search);
-          console.log(data.Search);
+          // console.log(data.Search);
           // needed because of cleanup
           // setError("");
         } catch (err) {

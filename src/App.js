@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import StarRating from "./StarsRating";
 import { useMovies } from "./useMovies";
 import { useLocalStorageState } from "./useLocalStorageState";
+import { useKeyboard } from "./useKeyboard";
 
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => +(acc + cur / arr.length).toFixed(1), 0);
@@ -115,22 +116,10 @@ function Search({ query, setQuery }) {
   // initialize useRef
   const inputEl = useRef(null);
 
-  // creating useEffect for focus on mount
-  useEffect(function () {
+  useKeyboard("Enter", function () {
+    if (document.activeElement === inputEl.current) return;
     inputEl.current.focus();
-    // creating focus on Enter btn pressed
-    function callback(e) {
-      // if (document.activeElement === inputEl.current) return;
-      console.log("event");
-      if (e.code === "Enter") {
-        inputEl.current.focus();
-        // setQuery("");
-      }
-    }
-    document.addEventListener("keydown", callback);
-    // cleaning up
-    // return () => document.removeEventListener("keydown", callback);
-  }, []);
+  });
 
   return (
     <input
@@ -242,7 +231,7 @@ function MovieDetails({ selectedId, onCloseMovie, onSetWatched, watched }) {
       runtime: runtime.split(" ").at(0),
       userRating,
     };
-    console.log(newWathcedMovie);
+    // console.log(newWathcedMovie);
     onSetWatched(newWathcedMovie);
     // also clsoe on add watched
     onCloseMovie();
@@ -279,25 +268,7 @@ function MovieDetails({ selectedId, onCloseMovie, onSetWatched, watched }) {
     [title]
   );
 
-  // adding listen event to close if Esc button is pressed on keyboard
-  useEffect(
-    function () {
-      const closing = function (e) {
-        if (e.code === "Escape") {
-          onCloseMovie();
-          console.log("CLOSING");
-        }
-      };
-      // adding global listener to the document - going outside React
-      document.addEventListener("keydown", closing);
-
-      // adding clean up
-      return function () {
-        document.removeEventListener("keydown", closing);
-      };
-    },
-    [onCloseMovie]
-  );
+  useKeyboard("Escape", onCloseMovie);
 
   return (
     <div className="details">
@@ -393,9 +364,13 @@ function WatchedMovie({ movie, onSelectedId, onDeleteWatched }) {
 }
 
 function WatchedSummary({ watched }) {
-  const avgImdbRating = average(watched.map((movie) => movie.imdbRating));
+  const avgImdbRating = average(
+    watched.map((movie) => +movie.imdbRating).filter((rating) => !isNaN(rating))
+  );
   const avgUserRating = average(watched.map((movie) => movie.userRating));
-  const avgRuntime = average(watched.map((movie) => movie.runtime));
+  const avgRuntime = average(
+    watched.map((movie) => +movie?.runtime).filter((runtime) => !isNaN(runtime))
+  );
 
   return (
     <div className="summary">
