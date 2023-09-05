@@ -19,10 +19,11 @@ export function useMovies(query) {
           setError("");
           // connectiong controller with fetch request (adding as second arg)
           const res = await fetch(
-            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}
+            `https://www.omdbapi.com/?apikey=${KEY}&s=${query}
             `,
-            { signal: controller.signal }
+            { mode: "cors", signal: controller.signal }
           );
+
           // if connection lost
           if (!res.ok)
             throw new Error("Something went wrong with fetching movies");

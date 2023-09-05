@@ -19,7 +19,7 @@ export default function App() {
   // const query = "interstellar";
 
   function handleSelectedId(id) {
-    // set id AMD conditionaly reset if click again on already selected movie
+    // set id AND conditionaly reset if click again on already selected movie
     setSelectedId(id === selectedId ? null : id);
   }
 
@@ -52,7 +52,7 @@ export default function App() {
           {!isLoading && !error && (
             <MoviesList movies={movies} onSelectedId={handleSelectedId} />
           )}
-          {error && <ErrorMessage message={error} />}
+          {error && <CustomMessage message={error} emoji="⛔️" />}
         </Box>
         <Box>
           {selectedId ? (
@@ -82,10 +82,10 @@ function Loading() {
   return <p className="loader">Loading...</p>;
 }
 
-function ErrorMessage({ message }) {
+function CustomMessage({ message, emoji }) {
   return (
     <p className="error">
-      <span>⛔️</span> {message}
+      <span>{emoji}</span> {message}
     </p>
   );
 }
@@ -107,7 +107,7 @@ function Logo() {
   return (
     <div className="logo">
       <span role="img">🍿</span>
-      <h1>usePopcorn</h1>
+      <h1>Movies&Popcorn</h1>
     </div>
   );
 }
@@ -158,9 +158,16 @@ function Box({ children }) {
 function MoviesList({ movies, onSelectedId }) {
   return (
     <ul className="list list-movies">
-      {movies?.map((movie) => (
-        <Movie movie={movie} key={movie.imdbID} onSelectedId={onSelectedId} />
-      ))}
+      {movies.length !== 0 ? (
+        movies.map((movie) => (
+          <Movie movie={movie} key={movie.imdbID} onSelectedId={onSelectedId} />
+        ))
+      ) : (
+        <CustomMessage
+          message="To start tracking your favorite movies - just use 'search' and rank the movie!"
+          emoji="🎬"
+        />
+      )}
     </ul>
   );
 }
@@ -243,7 +250,7 @@ function MovieDetails({ selectedId, onCloseMovie, onSetWatched, watched }) {
       async function getMovieDetails() {
         setIsLoading(true);
         const res =
-          await fetch(`http://www.omdbapi.com/?apikey=${KEY}&i=${selectedId}
+          await fetch(`https://www.omdbapi.com/?apikey=${KEY}&i=${selectedId}
   `);
         const data = await res.json();
         // console.log(data);
@@ -262,7 +269,8 @@ function MovieDetails({ selectedId, onCloseMovie, onSetWatched, watched }) {
       document.title = `Movie | ${title}`;
       // cleanup func
       return function () {
-        document.title = "usePopcorn";
+        document.title =
+          "Movies&Popcorn | Discover and keep track of your favorite movies";
       };
     },
     [title]
